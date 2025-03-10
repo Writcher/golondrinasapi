@@ -1,8 +1,9 @@
 import { PrismaClient } from '@prisma/client';
+import { NextRequest } from 'next/server';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: { url: string | URL; }) {
+export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const dateIn = url.searchParams.get('dateIn');
     const dateOut = url.searchParams.get('dateOut');
@@ -70,7 +71,7 @@ export async function GET(request: { url: string | URL; }) {
 
             };
         } else {
-            const filteredCabins = availableCabins.filter((cabin: { id: {value: number }, name: { value: string }, capacity: { value: number; }; }) => cabin.capacity.value >= parsedVisitorQuantity);
+            const filteredCabins = availableCabins.filter(cabin => cabin.capacity.value >= parsedVisitorQuantity);
 
             return new Response(
                 JSON.stringify(filteredCabins),
