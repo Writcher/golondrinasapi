@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+model Capacity {
+  id Int @id @default(autoincrement())
+  value Int
+  description String
+  cabins Cabin[]
+}
+
+model Cabin {
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  idCapacity Int
+  capacity Capacity @relation(fields: [idCapacity], references: [id])
+  cabinReservations CabinReservation[] 
+}
+
+model Reservation {
+  id Int @id @default(autoincrement())
+  clientName String
+  price Int
+  visitorQuantity Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cabinReservations CabinReservation[] 
+}
+
+model CabinReservation {
+  id Int @id @default(autoincrement())
+  dateIn DateTime
+  dateOut DateTime
+  idCabin Int
+  cabin Cabin @relation(fields: [idCabin], references: [id])
+  idReservation Int
+  reservation Reservation @relation(fields: [idReservation], references: [id], onDelete: Cascade)
+  @@unique([idCabin, dateIn, dateOut]) // Prevents duplicate reservations for the same cabin & dates
+}
