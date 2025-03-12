@@ -4,30 +4,30 @@ import { NextRequest } from 'next/server';
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
-    const url = new URL(request.url);
-    const dateIn = url.searchParams.get('dateIn');
-    const dateOut = url.searchParams.get('dateOut');
-    const visitorQuantity = url.searchParams.get('visitorQuantity');
-
-    if (!dateIn || !dateOut || !visitorQuantity) {
-        return new Response(
-            JSON.stringify({ error: 'Missing required parameters' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-    }
-
-    const parsedDateIn = new Date(dateIn);
-    const parsedDateOut = new Date(dateOut);
-    const parsedVisitorQuantity = parseInt(visitorQuantity, 10);
-
-    if (isNaN(parsedDateIn.getTime()) || isNaN(parsedDateOut.getTime()) || isNaN(parsedVisitorQuantity)) {
-        return new Response(
-            JSON.stringify({ error: 'Invalid parameters' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-    };
-
     try {
+        const url = new URL(request.url);
+        const dateIn = url.searchParams.get('dateIn');
+        const dateOut = url.searchParams.get('dateOut');
+        const visitorQuantity = url.searchParams.get('visitorQuantity');
+    
+        if (!dateIn || !dateOut || !visitorQuantity) {
+            return new Response(
+                JSON.stringify({ error: 'Missing required parameters' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        }
+    
+        const parsedDateIn = new Date(dateIn);
+        const parsedDateOut = new Date(dateOut);
+        const parsedVisitorQuantity = parseInt(visitorQuantity, 10);
+    
+        if (isNaN(parsedDateIn.getTime()) || isNaN(parsedDateOut.getTime()) || isNaN(parsedVisitorQuantity)) {
+            return new Response(
+                JSON.stringify({ error: 'Invalid parameters' }),
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+        };
+    
         const availableCabins = await prisma.cabin.findMany({
             where: {
                 cabinReservations: {
