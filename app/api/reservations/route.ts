@@ -2,10 +2,29 @@ import { PrismaClient } from '@prisma/client';
 import { NextRequest } from 'next/server';
 import dayjs from 'dayjs';
 
+const { API_KEY } = process.env;
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
     try {
+        const authHeader = request.headers.get('Authorization');
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized, API key missing or incorrect' }),
+                { status: 401, headers: { 'Content-Type': 'application/json' } }
+            );
+        };
+
+        const token = authHeader.replace('Bearer ', '');
+
+        if (token !== API_KEY) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized, invalid API key' }),
+                { status: 401, headers: { 'Content-Type': 'application/json' } }
+            );
+        };
+
         const url = new URL(request.url);
         const month = url.searchParams.get('month');
         const year = url.searchParams.get('year');
