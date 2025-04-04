@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { NextRequest } from 'next/server';
 
 const { API_KEY } = process.env;
-const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
     try {

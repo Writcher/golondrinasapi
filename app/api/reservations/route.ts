@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { NextRequest } from 'next/server';
 import dayjs from 'dayjs';
 
 const { API_KEY } = process.env;
-const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
     try {
@@ -28,80 +27,126 @@ export async function GET(request: NextRequest) {
         const url = new URL(request.url);
         const month = url.searchParams.get('month');
         const year = url.searchParams.get('year');
+        const dateIn = url.searchParams.get('dateIn');
+        const dateOut = url.searchParams.get('dateOut');
 
-        if (!month || !year) {
+        const isValidTableQuery = month && year && !dateIn && !dateOut;
+        const isValidDateInQuery = dateIn && !month && !year && !dateOut;
+        const isValidDateOutQuery = dateOut && !month && !year && !dateIn;
+        
+        if (!(isValidTableQuery || isValidDateInQuery || isValidDateOutQuery)) {
             return new Response(
-                JSON.stringify({ error: 'Missing required parameters' }),
-                { status: 400, headers: { 'Content-Type': 'application/json' } }
-            );
-        }
-    
-        const parsedMonth = parseInt(month, 10);
-        const parsedYear = parseInt(year, 10);
-    
-        if (isNaN(parsedMonth) || isNaN(parsedYear)) {
-            return new Response(
-                JSON.stringify({ error: 'Invalid parameters' }),
+                JSON.stringify({ error: 'Missing or invalid parameters' }),
                 { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         };
-    
-        const startOfMonth = dayjs().year(parsedYear).month(parsedMonth - 1).startOf('month').toDate();
-        const endOfMonth = dayjs().year(parsedYear).month(parsedMonth - 1).endOf('month').toDate();
 
-        const reservationList = await prisma.reservation.findMany({
-            where: {
-                cabinReservations: {
-                    some: {
-                        OR: [
-                            {
-                                dateIn: {
-                                    gte: startOfMonth,
-                                    lte: endOfMonth,
+        let reservationList;
+
+        if (isValidTableQuery) {
+            const parsedMonth = parseInt(month, 10);
+            const parsedYear = parseInt(year, 10);
+
+            if (isNaN(parsedMonth) || isNaN(parsedYear)) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid parameters' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            };
+
+            const startOfMonth = dayjs().year(parsedYear).month(parsedMonth - 1).startOf('month').toDate();
+            const endOfMonth = dayjs().year(parsedYear).month(parsedMonth - 1).endOf('month').toDate();
+    
+            reservationList = await prisma.reservation.findMany({
+                where: {
+                    cabinReservations: {
+                        some: {
+                            OR: [
+                                {
+                                    dateIn: {
+                                        gte: startOfMonth,
+                                        lte: endOfMonth,
+                                    },
                                 },
-                            },
-                            {
-                                dateOut: {
-                                    gte: startOfMonth,
-                                    lte: endOfMonth,
+                                {
+                                    dateOut: {
+                                        gte: startOfMonth,
+                                        lte: endOfMonth,
+                                    },
                                 },
-                            },
-                            {
-                                AND: [
-                                    {
-                                        dateIn: {
-                                            lte: endOfMonth,
+                                {
+                                    AND: [
+                                        {
+                                            dateIn: {
+                                                lte: endOfMonth,
+                                            },
                                         },
-                                    },
-                                    {
-                                        dateOut: {
-                                            gte: startOfMonth,
+                                        {
+                                            dateOut: {
+                                                gte: startOfMonth,
+                                            },
                                         },
-                                    },
-                                ],
-                            },
-                            {
-                                AND: [
-                                    {
-                                        dateIn: {
-                                            lte: endOfMonth,
-                                        },
-                                    },
-                                    {
-                                        dateOut: {
-                                            gte: startOfMonth,
-                                        },
-                                    },
-                                ],
-                            },
-                        ],
+                                    ],
+                                },
+                            ],
+                        },
                     },
                 },
-            },
-            include: {
-                cabinReservations: true,
-            },
-        });
+                include: {
+                    cabinReservations: true,
+                },
+            });
+
+        } else if (isValidDateInQuery) {
+            const parsedDateIn = new Date(dateIn);
+
+            if (isNaN(parsedDateIn.getTime())) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid parameters' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            };
+
+            reservationList = await prisma.reservation.findMany({
+                where: {
+                    cabinReservations: {
+                        some: {
+                            dateIn: {
+                               equals: parsedDateIn, 
+                            }
+                        }
+                    }
+                },
+                include: {
+                    cabinReservations: true,
+                },
+            });
+
+        } else if (isValidDateOutQuery) {
+            const parsedDateOut = new Date(dateOut);
+
+            if (isNaN(parsedDateOut.getTime())) {
+                return new Response(
+                    JSON.stringify({ error: 'Invalid parameters' }),
+                    { status: 400, headers: { 'Content-Type': 'application/json' } }
+                );
+            };
+
+            reservationList = await prisma.reservation.findMany({
+                where: {
+                    cabinReservations: {
+                        some: {
+                            dateOut: {
+                               equals: parsedDateOut, 
+                            }
+                        }
+                    }
+                },
+                include: {
+                    cabinReservations: true,
+                },
+            });
+        };
 
         if (!reservationList) {
             return new Response(
