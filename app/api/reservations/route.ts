@@ -112,7 +112,8 @@ export async function GET(request: NextRequest) {
                     cabinReservations: {
                         some: {
                             dateIn: {
-                               equals: parsedDateIn, 
+                                gte: dayjs(parsedDateIn).startOf('day').toDate(),
+                                lte: dayjs(parsedDateIn).endOf('day').toDate(),
                             }
                         }
                     }
@@ -137,7 +138,8 @@ export async function GET(request: NextRequest) {
                     cabinReservations: {
                         some: {
                             dateOut: {
-                               equals: parsedDateOut, 
+                                gte: dayjs(parsedDateOut).startOf('day').toDate(),
+                                lte: dayjs(parsedDateOut).endOf('day').toDate(), 
                             }
                         }
                     }
